@@ -13,125 +13,38 @@
     <button onclick="cargarDatos()">Actualizar datos</button>
   </header>
   <main>
-    <section class="intro"><div><h2>Resumen de rendimiento</h2><p>Los datos se leen desde <code>datos/empresa.csv</code>.</p></div><span id="estado" class="status">Cargando…</span></section>
-    
-    <section class="kpis">
+    <section class="intro"><div><h2>Resumen de rendimiento</h2><p>Los datos se leen desde <code>datos/empresa.csv</code>, y puedes agregarlos, editarlos o eliminarlos desde esta página.</p></div><span id="estado" class="status">Cargando…</span></section>
+    <section class="panel" id="panelForm">
+      <h3 id="formTitulo">Agregar registro</h3>
+      <form id="formRegistro" novalidate>
+        <input type="hidden" id="registroId">
+        <div class="form-grid">
+          <label>Periodo<input id="fMes" type="text" placeholder="Ej. Junio 2026" maxlength="60" required></label>
+          <label>Ventas (COP)<input id="fVentas" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label>Gastos (COP)<input id="fGastos" type="number" min="0" step="any" inputmode="decimal" required></label>
+          <label>Clientes<input id="fClientes" type="number" min="0" step="1" inputmode="numeric" required></label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="btnGuardar" class="btn-primary">Agregar</button>
+          <button type="button" id="btnCancelar" class="btn-ghost" hidden>Cancelar edición</button>
+          <span id="msgForm" class="msg" role="status"></span>
+        </div>
+      </form>
+    </section>
+    <section class="kpis" style="margin-top:18px">
       <article class="kpi"><span>Ventas acumuladas</span><strong id="ventas">$0</strong><small id="cambio">Variación: —</small></article>
       <article class="kpi"><span>Gastos acumulados</span><strong id="gastos">$0</strong><small>Costos y gastos registrados</small></article>
       <article class="kpi"><span>Ganancia estimada</span><strong id="ganancia">$0</strong><small id="margen">Margen: 0%</small></article>
       <article class="kpi"><span>Clientes acumulados</span><strong id="clientes">0</strong><small>Según los periodos registrados</small></article>
     </section>
-
     <section class="charts">
       <article class="panel"><h3>Ventas y gastos por periodo</h3><div class="chartbox"><canvas id="lineChart"></canvas></div></article>
       <article class="panel"><h3>Distribución acumulada</h3><div class="chartbox"><canvas id="barChart"></canvas></div></article>
     </section>
-
-    <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones.</p><ul id="analisis"></ul></section>
-    
-    <section class="panel"><h3>Datos registrados</h3><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Ventas</th><th>Gastos</th><th>Ganancia</th><th>Clientes</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
-    
-    <!-- Formulario para añadir datos -->
-    <section class="panel">
-      <h3>Añadir nuevo registro</h3>
-      <form action="/agregar" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-        <input type="text" name="periodo" placeholder="Periodo (ej. Junio 2026)" required style="padding: 10px; flex: 1; min-width: 140px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" step="any" name="ventas" placeholder="Ventas" required style="padding: 10px; flex: 1; min-width: 110px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" step="any" name="gastos" placeholder="Gastos" required style="padding: 10px; flex: 1; min-width: 110px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" name="clientes" placeholder="Clientes" required style="padding: 10px; flex: 1; min-width: 90px; border: 1px solid #ccc; border-radius: 4px;">
-        <button type="submit" style="padding: 10px 18px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar dato</button>
-      </form>
-    </section>
+    <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones. No reemplaza el criterio profesional.</p><ul id="analisis"></ul></section>
+    <section class="panel"><h3>Datos registrados</h3><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Ventas</th><th>Gastos</th><th>Ganancia</th><th>Clientes</th><th>Acciones</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
+    <section class="help"><strong>¿Cómo ingresar datos?</strong><p>Usa el formulario para <b>agregar</b> un periodo. En la tabla, pulsa <b>Editar</b> para modificar un registro o <b>Eliminar</b> para borrarlo. El dashboard se actualiza solo. Todo se guarda en <code>datos/empresa.csv</code>.</p></section>
   </main>
-  <footer>Proyecto académico · Aplicación demostrativa</footer>
-
-  <script>
-    let lineChartInstance = null;
-    let barChartInstance = null;
-
-    async function cargarDatos() {
-      try {
-        document.getElementById('estado').innerText = "Actualizando...";
-        const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        
-        document.getElementById('ventas').innerText = `$${Number(data.ventas_totales || 0).toLocaleString()}`;
-        document.getElementById('gastos').innerText = `$${Number(data.gastos_totales || 0).toLocaleString()}`;
-        document.getElementById('ganancia').innerText = `$${Number(data.ganancia_neta || 0).toLocaleString()}`;
-        document.getElementById('clientes').innerText = Number(data.clientes_totales || 0).toLocaleString();
-        
-        const tbody = document.getElementById('tabla');
-        tbody.innerHTML = '';
-        
-        if (data.detalle && data.detalle.length > 0) {
-          data.detalle.forEach((row) => {
-            // Busca automáticamente cualquier propiedad que funcione como periodo (mes, periodo, fecha, etc.) o toma el primer valor disponible
-            const nombrePeriodo = row.periodo || row.mes || row.fecha || Object.values(row)[0] || '';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${nombrePeriodo}</td>
-              <td>$${Number(row.ventas || 0).toLocaleString()}</td>
-              <td>$${Number(row.gastos || 0).toLocaleString()}</td>
-              <td>$${Number(row.ganancia || 0).toLocaleString()}</td>
-              <td>${row.clientes || 0}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-        
-        const ul = document.getElementById('analisis');
-        ul.innerHTML = '';
-        if (data.analisis && data.analisis.length > 0) {
-          data.analisis.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            ul.appendChild(li);
-          });
-        }
-
-        actualizarGraficos(data.detalle);
-        document.getElementById('estado').innerText = "Actualizado con éxito";
-      } catch (err) {
-        document.getElementById('estado').innerText = "Error al cargar datos";
-        console.error(err);
-      }
-    }
-
-    function actualizarGraficos(detalle) {
-      if (!detalle || detalle.length === 0) return;
-      const periodos = detalle.map(d => d.periodo || d.mes || d.fecha || Object.values(d)[0]);
-      const ventas = detalle.map(d => Number(d.ventas));
-      const gastos = detalle.map(d => Number(d.gastos));
-
-      const ctxLine = document.getElementById('lineChart').getContext('2d');
-      if (lineChartInstance) lineChartInstance.destroy();
-      lineChartInstance = new Chart(ctxLine, {
-        type: 'line',
-        data: {
-          labels: periodos,
-          datasets: [
-            { label: 'Ventas', data: ventas, borderColor: '#007bff', tension: 0.1 },
-            { label: 'Gastos', data: gastos, borderColor: '#dc3545', tension: 0.1 }
-          ]
-        }
-      });
-
-      const ctxBar = document.getElementById('barChart').getContext('2d');
-      if (barChartInstance) barChartInstance.destroy();
-      barChartInstance = new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-          labels: periodos,
-          datasets: [
-            { label: 'Ventas', data: ventas, backgroundColor: '#007bff' },
-            { label: 'Gastos', data: gastos, backgroundColor: '#dc3545' }
-          ]
-        }
-      });
-    }
-
-    window.onload = cargarDatos;
-  </script>
-</body>
-</html>
+  <footer>Proyecto académico · Aplicación demostrativa · Datos de ejemplo no incluidos</footer>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body></html>

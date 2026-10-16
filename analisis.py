@@ -1,11 +1,12 @@
 def resumir(registros):
     datos = []
-    for r in registros:
+    for i, r in enumerate(registros):
         try:
             ventas = float(r.get("ventas", 0) or 0)
             gastos = float(r.get("gastos", 0) or 0)
             clientes = int(float(r.get("clientes", 0) or 0))
             datos.append({
+                "id": i,
                 "mes": r.get("mes", ""),
                 "ventas": ventas,
                 "gastos": gastos,
@@ -27,7 +28,7 @@ def resumir(registros):
 
     observaciones = []
     if not datos:
-        observaciones.append("No hay registros todavía. Registra datos desde la consola y recarga el dashboard.")
+        observaciones.append("No hay registros todavía. Agrega tu primer registro con el formulario de abajo.")
     else:
         if ganancia_total < 0:
             observaciones.append("Los gastos acumulados superan las ventas. Revisa los costos y las fuentes de ingreso.")

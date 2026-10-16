@@ -1,8 +1,8 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for
-from registro import cargar_datos
+from flask import Flask, render_template, jsonify, request
+from registro import (cargar_datos, agregar_registro, editar_registro,
+                      eliminar_registro)
 from analisis import resumir
 import os
-import csv
 
 app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), "datos", "empresa.csv")
@@ -13,31 +13,39 @@ def index():
 
 @app.route("/api/dashboard")
 def dashboard():
-    try:
-        registros = cargar_datos(DATA_FILE)
-        return jsonify(resumir(registros))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    registros = cargar_datos(DATA_FILE)
+    return jsonify(resumir(registros))
 
-@app.route("/agregar", methods=["POST"])
-def agregar():
+def _json_body():
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else {}
+
+def _error(msg, code):
+    return jsonify({"error": msg}), code
+
+@app.route("/api/registros", methods=["POST"])
+def crear():
     try:
-        periodo = request.form.get("periodo")
-        ventas = request.form.get("ventas")
-        gastos = request.form.get("gastos")
-        clientes = request.form.get("clientes")
-        
-        # Calcula la ganancia automáticamente restando ventas menos gastos
-        ganancia = float(ventas) - float(gastos)
-        
-        # Guarda el nuevo registro respetando el formato CSV y el salto de línea
-        with open(DATA_FILE, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow([periodo, ventas, gastos, ganancia, clientes])
-            
-        return redirect(url_for("index"))
-    except Exception as e:
-        return str(e), 500
+        return jsonify(agregar_registro(DATA_FILE, _json_body())), 201
+    except ValueError as e:
+        return _error(str(e), 400)
+
+@app.route("/api/registros/<int:idx>", methods=["PUT"])
+def actualizar(idx):
+    try:
+        return jsonify(editar_registro(DATA_FILE, idx, _json_body()))
+    except LookupError as e:
+        return _error(str(e), 404)
+    except ValueError as e:
+        return _error(str(e), 400)
+
+@app.route("/api/registros/<int:idx>", methods=["DELETE"])
+def borrar(idx):
+    try:
+        eliminar_registro(DATA_FILE, idx)
+        return jsonify({"ok": True})
+    except LookupError as e:
+        return _error(str(e), 404)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
