@@ -27,7 +27,7 @@
       <article class="panel"><h3>Distribución acumulada</h3><div class="chartbox"><canvas id="barChart"></canvas></div></article>
     </section>
 
-    <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones. No reemplaza el criterio profesional.</p><ul id="analisis"></ul></section>
+    <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones.</p><ul id="analisis"></ul></section>
     
     <section class="panel">
       <h3>Datos registrados</h3>
@@ -61,61 +61,6 @@
   </main>
   <footer>Proyecto académico · Aplicación demostrativa</footer>
 
-  <script>
-    async function cargarDatos() {
-      try {
-        document.getElementById('estado').innerText = "Actualizando...";
-        const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        
-        document.getElementById('ventas').innerText = `$${data.ventas_totales.toLocaleString()}`;
-        document.getElementById('gastos').innerText = `$${data.gastos_totales.toLocaleString()}`;
-        document.getElementById('ganancia').innerText = `$${data.ganancia_neta.toLocaleString()}`;
-        document.getElementById('clientes').innerText = data.clientes_totales.toLocaleString();
-        
-        const tbody = document.getElementById('tabla');
-        tbody.innerHTML = '';
-        
-        if (data.detalle && data.detalle.length > 0) {
-          data.detalle.forEach((row, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${row.periodo}</td>
-              <td>$${Number(row.ventas).toLocaleString()}</td>
-              <td>$${Number(row.gastos).toLocaleString()}</td>
-              <td>$${Number(row.ganancia).toLocaleString()}</td>
-              <td>${row.clientes}</td>
-              <td>
-                <div style="display: flex; gap: 5px;">
-                  <form action="/eliminar/${index}" method="POST" style="display:inline;">
-                    <button type="submit" style="background:#dc3545; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;" onclick="return confirm('¿Seguro que deseas eliminar este registro?')">Eliminar</button>
-                  </form>
-                </div>
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-        
-        // Renderizar análisis
-        const ul = document.getElementById('analisis');
-        ul.innerHTML = '';
-        if (data.analisis && data.analisis.length > 0) {
-          data.analisis.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            ul.appendChild(li);
-          });
-        }
-        
-        document.getElementById('estado').innerText = "Actualizado con éxito";
-      } catch (err) {
-        document.getElementById('estado').innerText = "Error al cargar datos";
-        console.error(err);
-      }
-    }
-
-    window.onload = cargarDatos;
-  </script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
