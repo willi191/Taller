@@ -54,7 +54,6 @@
               <th>Gastos</th>
               <th>Ganancia</th>
               <th>Clientes</th>
-              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla"></tbody>
@@ -94,7 +93,7 @@
         tbody.innerHTML = '';
         
         if (data.detalle && data.detalle.length > 0) {
-          data.detalle.forEach((row, index) => {
+          data.detalle.forEach((row) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>${row.periodo || ''}</td>
@@ -102,11 +101,6 @@
               <td>$${Number(row.gastos || 0).toLocaleString()}</td>
               <td>$${Number(row.ganancia || 0).toLocaleString()}</td>
               <td>${row.clientes || 0}</td>
-              <td>
-                <form action="/eliminar/${index}" method="POST" style="display:inline;">
-                  <button type="submit" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="return confirm('¿Seguro que deseas eliminar este registro?')">Eliminar</button>
-                </form>
-              </td>
             `;
             tbody.appendChild(tr);
           });
