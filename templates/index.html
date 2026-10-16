@@ -29,23 +29,87 @@
 
     <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones. No reemplaza el criterio profesional.</p><ul id="analisis"></ul></section>
     
-    <section class="panel"><h3>Datos registrados</h3><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Ventas</th><th>Gastos</th><th>Ganancia</th><th>Clientes</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
-    
-    <!-- SECCIÓN CONVERTIDA EN FORMULARIO INTERACTIVO -->
+    <!-- TABLA CON COLUMNA DE ACCIONES -->
     <section class="panel">
-      <h3>¿Cómo ingresar datos?</h3>
-      <p>Puedes agregar un nuevo registro directamente desde aquí o ejecutando <code>python registro.py</code> en tu terminal local.</p>
-      
+      <h3>Datos registrados</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Ventas</th>
+              <th>Gastos</th>
+              <th>Ganancia</th>
+              <th>Clientes</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla"></tbody>
+        </table>
+      </div>
+    </section>
+    
+    <!-- FORMULARIO PARA AÑADIR DATOS -->
+    <section class="panel">
+      <h3>Añadir nuevo registro</h3>
       <form action="/agregar" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
         <input type="text" name="periodo" placeholder="Periodo (ej. Junio 2026)" required style="padding: 10px; flex: 1; min-width: 150px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" step="any" name="ventas" placeholder="Ventas (ej. 25000000)" required style="padding: 10px; flex: 1; min-width: 130px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" step="any" name="gastos" placeholder="Gastos (ej. 14000000)" required style="padding: 10px; flex: 1; min-width: 130px; border: 1px solid #ccc; border-radius: 4px;">
-        <input type="number" name="clientes" placeholder="Clientes (ej. 190)" required style="padding: 10px; flex: 1; min-width: 100px; border: 1px solid #ccc; border-radius: 4px;">
+        <input type="number" step="any" name="ventas" placeholder="Ventas" required style="padding: 10px; flex: 1; min-width: 130px; border: 1px solid #ccc; border-radius: 4px;">
+        <input type="number" step="any" name="gastos" placeholder="Gastos" required style="padding: 10px; flex: 1; min-width: 130px; border: 1px solid #ccc; border-radius: 4px;">
+        <input type="number" name="clientes" placeholder="Clientes" required style="padding: 10px; flex: 1; min-width: 100px; border: 1px solid #ccc; border-radius: 4px;">
         <button type="submit" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar dato</button>
       </form>
     </section>
   </main>
   <footer>Proyecto académico · Aplicación demostrativa</footer>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <!-- SCRIPT MODIFICADO PARA RENDERIZAR BOTONES DE EDITAR/ELIMINAR EN LA TABLA -->
+  <script>
+    // Aseguramos que la función que llena la tabla pinte los botones de acción
+    async function cargarDatos() {
+      try {
+        document.getElementById('estado').innerText = "Actualizando...";
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+        
+        // Actualizar KPIs
+        document.getElementById('ventas').innerText = `$${data.ventas_totales.toLocaleString()}`;
+        document.getElementById('gastos').innerText = `$${data.gastos_totales.toLocaleString()}`;
+        document.getElementById('ganancia').innerText = `$${data.ganancia_neta.toLocaleString()}`;
+        document.getElementById('clientes').innerText = data.clientes_totales.toLocaleString();
+        
+        // Actualizar tabla con botones de editar y eliminar
+        const tbody = document.getElementById('tabla');
+        tbody.innerHTML = '';
+        
+        if (data.detalle && data.detalle.length > 0) {
+          data.detalle.forEach((row, index) => {
+            // Nota: index + 1 asume que la línea 0 del CSV es la cabecera
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${row.periodo}</td>
+              <td>$${Number(row.ventas).toLocaleString()}</td>
+              <td>$${Number(row.gastos).toLocaleString()}</td>
+              <td>$${Number(row.ganancia).toLocaleString()}</td>
+              <td>${row.clientes}</td>
+              <td>
+                <form action="/eliminar/${index + 1}" method="POST" style="display:inline;">
+                  <button type="submit" style="background:#dc3545; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Eliminar</button>
+                </form>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+        
+        document.getElementById('estado').innerText = "Actualizado con éxito";
+      } catch (err) {
+        document.getElementById('estado').innerText = "Error al cargar datos";
+        console.error(err);
+      }
+    }
+
+    window.onload = cargarDatos;
+  </script>
 </body>
 </html>
