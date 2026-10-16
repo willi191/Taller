@@ -9,21 +9,11 @@
 </head>
 <body>
   <header class="top">
-    <div>
-      <p class="eyebrow">ANALÍTICA EMPRESARIAL</p>
-      <h1>Dashboard inteligente</h1>
-      <p class="sub">Indicadores para apoyar decisiones basadas en datos</p>
-    </div>
+    <div><p class="eyebrow">ANALÍTICA EMPRESARIAL</p><h1>Dashboard inteligente</h1><p class="sub">Indicadores para apoyar decisiones basadas en datos</p></div>
     <button onclick="cargarDatos()">Actualizar datos</button>
   </header>
   <main>
-    <section class="intro">
-      <div>
-        <h2>Resumen de rendimiento</h2>
-        <p>Los datos se leen desde <code>datos/empresa.csv</code>.</p>
-      </div>
-      <span id="estado" class="status">Cargando…</span>
-    </section>
+    <section class="intro"><div><h2>Resumen de rendimiento</h2><p>Los datos se leen desde <code>datos/empresa.csv</code>.</p></div><span id="estado" class="status">Cargando…</span></section>
     
     <section class="kpis">
       <article class="kpi"><span>Ventas acumuladas</span><strong id="ventas">$0</strong><small id="cambio">Variación: —</small></article>
@@ -37,30 +27,11 @@
       <article class="panel"><h3>Distribución acumulada</h3><div class="chartbox"><canvas id="barChart"></canvas></div></article>
     </section>
 
-    <section class="panel analysis">
-      <h3><span class="spark">✦</span> Análisis inteligente</h3>
-      <p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones.</p>
-      <ul id="analisis"></ul>
-    </section>
+    <section class="panel analysis"><h3><span class="spark">✦</span> Análisis inteligente</h3><p class="muted">Reglas de análisis descriptivo que detectan señales y sugieren revisiones.</p><ul id="analisis"></ul></section>
     
-    <section class="panel">
-      <h3>Datos registrados</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Periodo</th>
-              <th>Ventas</th>
-              <th>Gastos</th>
-              <th>Ganancia</th>
-              <th>Clientes</th>
-            </tr>
-          </thead>
-          <tbody id="tabla"></tbody>
-        </table>
-      </div>
-    </section>
+    <section class="panel"><h3>Datos registrados</h3><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Ventas</th><th>Gastos</th><th>Ganancia</th><th>Clientes</th></tr></thead><tbody id="tabla"></tbody></table></div></section>
     
+    <!-- Formulario para añadir datos -->
     <section class="panel">
       <h3>Añadir nuevo registro</h3>
       <form action="/agregar" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
@@ -73,91 +44,6 @@
     </section>
   </main>
   <footer>Proyecto académico · Aplicación demostrativa</footer>
-
-  <script>
-    let lineChartInstance = null;
-    let barChartInstance = null;
-
-    async function cargarDatos() {
-      try {
-        document.getElementById('estado').innerText = "Actualizando...";
-        const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        
-        document.getElementById('ventas').innerText = `$${Number(data.ventas_totales || 0).toLocaleString()}`;
-        document.getElementById('gastos').innerText = `$${Number(data.gastos_totales || 0).toLocaleString()}`;
-        document.getElementById('ganancia').innerText = `$${Number(data.ganancia_neta || 0).toLocaleString()}`;
-        document.getElementById('clientes').innerText = Number(data.clientes_totales || 0).toLocaleString();
-        
-        const tbody = document.getElementById('tabla');
-        tbody.innerHTML = '';
-        
-        if (data.detalle && data.detalle.length > 0) {
-          data.detalle.forEach((row) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${row.periodo || ''}</td>
-              <td>$${Number(row.ventas || 0).toLocaleString()}</td>
-              <td>$${Number(row.gastos || 0).toLocaleString()}</td>
-              <td>$${Number(row.ganancia || 0).toLocaleString()}</td>
-              <td>${row.clientes || 0}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        }
-        
-        const ul = document.getElementById('analisis');
-        ul.innerHTML = '';
-        if (data.analisis && data.analisis.length > 0) {
-          data.analisis.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            ul.appendChild(li);
-          });
-        }
-
-        actualizarGraficos(data.detalle);
-        document.getElementById('estado').innerText = "Actualizado con éxito";
-      } catch (err) {
-        document.getElementById('estado').innerText = "Error al cargar datos";
-        console.error(err);
-      }
-    }
-
-    function actualizarGraficos(detalle) {
-      if (!detalle || detalle.length === 0) return;
-      const periodos = detalle.map(d => d.periodo);
-      const ventas = detalle.map(d => Number(d.ventas));
-      const gastos = detalle.map(d => Number(d.gastos));
-
-      const ctxLine = document.getElementById('lineChart').getContext('2d');
-      if (lineChartInstance) lineChartInstance.destroy();
-      lineChartInstance = new Chart(ctxLine, {
-        type: 'line',
-        data: {
-          labels: periodos,
-          datasets: [
-            { label: 'Ventas', data: ventas, borderColor: '#007bff', tension: 0.1 },
-            { label: 'Gastos', data: gastos, borderColor: '#dc3545', tension: 0.1 }
-          ]
-        }
-      });
-
-      const ctxBar = document.getElementById('barChart').getContext('2d');
-      if (barChartInstance) barChartInstance.destroy();
-      barChartInstance = new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-          labels: periodos,
-          datasets: [
-            { label: 'Ventas', data: ventas, backgroundColor: '#007bff' },
-            { label: 'Gastos', data: gastos, backgroundColor: '#dc3545' }
-          ]
-        }
-      });
-    }
-
-    window.onload = cargarDatos;
-  </script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

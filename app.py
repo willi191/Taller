@@ -2,7 +2,6 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for
 from registro import cargar_datos
 from analisis import resumir
 import os
-import csv
 
 app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), "datos", "empresa.csv")
@@ -13,11 +12,8 @@ def index():
 
 @app.route("/api/dashboard")
 def dashboard():
-    try:
-        registros = cargar_datos(DATA_FILE)
-        return jsonify(resumir(registros))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    registros = cargar_datos(DATA_FILE)
+    return jsonify(resumir(registros))
 
 @app.route("/agregar", methods=["POST"])
 def agregar():
@@ -29,33 +25,8 @@ def agregar():
         
         ganancia = float(ventas) - float(gastos)
         
-        with open(DATA_FILE, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow([periodo, ventas, gastos, ganancia, clientes])
-            
-        return redirect(url_for("index"))
-    except Exception as e:
-        return str(e), 500
-
-@app.route("/eliminar/<int:index>", methods=["POST"])
-def eliminar(index):
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            reader = list(csv.reader(f))
-            
-        if not reader:
-            return redirect(url_for("index"))
-            
-        header = reader[0]
-        rows = reader[1:]
-        
-        if 0 <= index < len(rows):
-            rows.pop(index)
-            
-        with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(header)
-            writer.writerows(rows)
+        with open(DATA_FILE, "a", encoding="utf-8") as f:
+            f.write(f"\n{periodo},{ventas},{gastos},{ganancia},{clientes}")
             
         return redirect(url_for("index"))
     except Exception as e:
