@@ -44,6 +44,94 @@
     </section>
   </main>
   <footer>Proyecto académico · Aplicación demostrativa</footer>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <script>
+    let lineChartInstance = null;
+    let barChartInstance = null;
+
+    async function cargarDatos() {
+      try {
+        document.getElementById('estado').innerText = "Actualizando...";
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+        
+        document.getElementById('ventas').innerText = `$${Number(data.ventas_totales || 0).toLocaleString()}`;
+        document.getElementById('gastos').innerText = `$${Number(data.gastos_totales || 0).toLocaleString()}`;
+        document.getElementById('ganancia').innerText = `$${Number(data.ganancia_neta || 0).toLocaleString()}`;
+        document.getElementById('clientes').innerText = Number(data.clientes_totales || 0).toLocaleString();
+        
+        const tbody = document.getElementById('tabla');
+        tbody.innerHTML = '';
+        
+        if (data.detalle && data.detalle.length > 0) {
+          data.detalle.forEach((row) => {
+            // Busca automáticamente cualquier propiedad que funcione como periodo (mes, periodo, fecha, etc.) o toma el primer valor disponible
+            const nombrePeriodo = row.periodo || row.mes || row.fecha || Object.values(row)[0] || '';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${nombrePeriodo}</td>
+              <td>$${Number(row.ventas || 0).toLocaleString()}</td>
+              <td>$${Number(row.gastos || 0).toLocaleString()}</td>
+              <td>$${Number(row.ganancia || 0).toLocaleString()}</td>
+              <td>${row.clientes || 0}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+        
+        const ul = document.getElementById('analisis');
+        ul.innerHTML = '';
+        if (data.analisis && data.analisis.length > 0) {
+          data.analisis.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            ul.appendChild(li);
+          });
+        }
+
+        actualizarGraficos(data.detalle);
+        document.getElementById('estado').innerText = "Actualizado con éxito";
+      } catch (err) {
+        document.getElementById('estado').innerText = "Error al cargar datos";
+        console.error(err);
+      }
+    }
+
+    function actualizarGraficos(detalle) {
+      if (!detalle || detalle.length === 0) return;
+      const periodos = detalle.map(d => d.periodo || d.mes || d.fecha || Object.values(d)[0]);
+      const ventas = detalle.map(d => Number(d.ventas));
+      const gastos = detalle.map(d => Number(d.gastos));
+
+      const ctxLine = document.getElementById('lineChart').getContext('2d');
+      if (lineChartInstance) lineChartInstance.destroy();
+      lineChartInstance = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: periodos,
+          datasets: [
+            { label: 'Ventas', data: ventas, borderColor: '#007bff', tension: 0.1 },
+            { label: 'Gastos', data: gastos, borderColor: '#dc3545', tension: 0.1 }
+          ]
+        }
+      });
+
+      const ctxBar = document.getElementById('barChart').getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
+      barChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: periodos,
+          datasets: [
+            { label: 'Ventas', data: ventas, backgroundColor: '#007bff' },
+            { label: 'Gastos', data: gastos, backgroundColor: '#dc3545' }
+          ]
+        }
+      });
+    }
+
+    window.onload = cargarDatos;
+  </script>
 </body>
 </html>

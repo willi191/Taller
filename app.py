@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for
 from registro import cargar_datos
 from analisis import resumir
 import os
+import csv
 
 app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), "datos", "empresa.csv")
@@ -12,8 +13,11 @@ def index():
 
 @app.route("/api/dashboard")
 def dashboard():
-    registros = cargar_datos(DATA_FILE)
-    return jsonify(resumir(registros))
+    try:
+        registros = cargar_datos(DATA_FILE)
+        return jsonify(resumir(registros))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/agregar", methods=["POST"])
 def agregar():
@@ -23,10 +27,13 @@ def agregar():
         gastos = request.form.get("gastos")
         clientes = request.form.get("clientes")
         
+        # Calcula la ganancia automáticamente restando ventas menos gastos
         ganancia = float(ventas) - float(gastos)
         
-        with open(DATA_FILE, "a", encoding="utf-8") as f:
-            f.write(f"\n{periodo},{ventas},{gastos},{ganancia},{clientes}")
+        # Guarda el nuevo registro respetando el formato CSV y el salto de línea
+        with open(DATA_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([periodo, ventas, gastos, ganancia, clientes])
             
         return redirect(url_for("index"))
     except Exception as e:
